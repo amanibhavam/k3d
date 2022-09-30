@@ -226,7 +226,4 @@ ci-setup:
 	curl -sfL $(PKG_GOLANGCI_LINT_SCRIPT) | sh -s -- -b $(GOENVPATH)/bin v$(PKG_GOLANGCI_LINT_VERSION)
 
 	@echo "### -> Installing gox..."
-	./scripts/install-tools.sh gox
-
-	@echo "### Installing kubectl..."
-	./scripts/install-tools.sh kubectl
+	sudo ./scripts/install-tools.sh gox
