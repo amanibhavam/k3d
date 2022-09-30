@@ -2,8 +2,6 @@ module github.com/amanibhavam/k3d/v5
 
 go 1.19
 
-replace github.com/amanibhavam/k3d/v5 => ./
-
 require (
 	github.com/Microsoft/go-winio v0.5.2 // indirect
 	github.com/Microsoft/hcsshim v0.9.4 // indirect
