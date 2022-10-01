@@ -170,7 +170,7 @@ func TranslateNodeToContainer(node *k3d.Node) (*NodeInDocker, error) {
 		}
 	}
 
-	hostConfig.CapAdd = append(hostConfig.CapAdd, "NET_ADMIN")
+	//hostConfig.CapAdd = append(hostConfig.CapAdd, "NET_ADMIN")
 	//hostConfig.CapAdd = append(hostConfig.CapAdd, "SYS_ADMIN")
 	//hostConfig.CapAdd = append(hostConfig.CapAdd, "SYS_MODULE")
 
