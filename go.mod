@@ -1,4 +1,4 @@
-module github.com/amanibhavam/k3d/v5
+module github.com/k3d-io/k3d/v5
 
 go 1.19
 
