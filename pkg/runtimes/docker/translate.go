@@ -122,7 +122,7 @@ func TranslateNodeToContainer(node *k3d.Node) (*NodeInDocker, error) {
 
 	/* They have to run in privileged mode */
 	// TODO: can we replace this by a reduced set of capabilities?
-	hostConfig.Privileged = true
+	hostConfig.Privileged = false
 
 	if node.HostPidMode {
 		hostConfig.PidMode = "host"
