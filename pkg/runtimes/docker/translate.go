@@ -169,6 +169,8 @@ func TranslateNodeToContainer(node *k3d.Node) (*NodeInDocker, error) {
 		}
 	}
 
+	hostConfig.CapAdd = append(hostConfig.CapAdd, "NET_ADMIN")
+
 	return &NodeInDocker{
 		ContainerConfig:  containerConfig,
 		HostConfig:       hostConfig,
