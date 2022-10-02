@@ -105,7 +105,7 @@ func TranslateNodeToContainer(node *k3d.Node) (*NodeInDocker, error) {
 	if node.GPURequest != "" {
 		gpuopts := dockercliopts.GpuOpts{}
 		if err := gpuopts.Set(node.GPURequest); err != nil {
-			return nil, fmt.Errorf("Failed to set GPU Request: %+v", err)
+			return nil, fmt.Errorf("failed to set GPU Request: %+v", err)
 		}
 		hostConfig.DeviceRequests = gpuopts.Value()
 	}
@@ -115,7 +115,7 @@ func TranslateNodeToContainer(node *k3d.Node) (*NodeInDocker, error) {
 	if node.Memory != "" {
 		memory, err := dockerunits.RAMInBytes(node.Memory)
 		if err != nil {
-			return nil, fmt.Errorf("Failed to set memory limit: %+v", err)
+			return nil, fmt.Errorf("failed to set memory limit: %+v", err)
 		}
 		hostConfig.Memory = memory
 	}
@@ -132,7 +132,7 @@ func TranslateNodeToContainer(node *k3d.Node) (*NodeInDocker, error) {
 	/* Volumes */
 	hostConfig.Binds = node.Volumes
 
-	if privileged == false {
+	if !privileged {
 		hostConfig.Binds = append(hostConfig.Binds, "/dev/net/tun:/dev/net/tun")
 	}
 	// containerConfig.Volumes = map[string]struct{}{} // TODO: do we need this? We only used binds before
