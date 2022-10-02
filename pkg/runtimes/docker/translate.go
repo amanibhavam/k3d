@@ -132,7 +132,7 @@ func TranslateNodeToContainer(node *k3d.Node) (*NodeInDocker, error) {
 	/* Volumes */
 	hostConfig.Binds = node.Volumes
 
-	if privileged {
+	if privileged == false {
 		hostConfig.Binds = append(hostConfig.Binds, "/dev/net/tun:/dev/net/tun")
 	}
 	// containerConfig.Volumes = map[string]struct{}{} // TODO: do we need this? We only used binds before
