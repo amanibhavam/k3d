@@ -122,7 +122,8 @@ func TranslateNodeToContainer(node *k3d.Node) (*NodeInDocker, error) {
 
 	/* They have to run in privileged mode */
 	// TODO: can we replace this by a reduced set of capabilities?
-	hostConfig.Privileged = false
+	privileged, _ := strconv.ParseBool(os.Getenv("DEFN_DEV_PRIVILEGED"))
+	hostConfig.Privileged = privileged
 
 	if node.HostPidMode {
 		hostConfig.PidMode = "host"
@@ -130,7 +131,10 @@ func TranslateNodeToContainer(node *k3d.Node) (*NodeInDocker, error) {
 
 	/* Volumes */
 	hostConfig.Binds = node.Volumes
-	hostConfig.Binds = append(hostConfig.Binds, "/dev/net/tun:/dev/net/tun")
+
+	if privileged {
+		hostConfig.Binds = append(hostConfig.Binds, "/dev/net/tun:/dev/net/tun")
+	}
 	// containerConfig.Volumes = map[string]struct{}{} // TODO: do we need this? We only used binds before
 
 	/* Ports */
