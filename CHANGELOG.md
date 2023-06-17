@@ -1,5 +1,90 @@
 # Changelog
 
+## v5.5.1 - 19.05.2023
+
+### Fixed
+
+- fix/regression: custom registry config not parsed correctly (#1292)
+
+## v5.5.0 - 17.05.2023
+
+### Added
+
+- Add support for ulimits (#1264)
+  - new flag: `k3d cluster create --runtime-ulimit NAME[=SOFT]:[HARD]` (same for `k3d node create`)
+- add: K3D_FIX_MOUNTS fix to make / rshared (e.g. to make Cilium work) (#1268)
+  - new environment variable: `K3D_FIX_MOUNTS=1`
+- add(docs): podman instructions for macOS (#1257)
+- Adds json response of version info (#1262)
+  - new flag: `k3d version -o json`
+
+### Changed
+
+- change: allow full K3s registry configuration (#1215)
+- change: update deps (manual + dependabot)
+- change: set e2e test ghaction timeout
+- change: improved help text for k3d version ls
+- change: deprecate 'k3d version ls --format' in favor of '--output'
+- change: golangci-lint fix whitespaces
+- change: udpate docs
+
+### Fixed
+
+- Fix panic when k3sURLEnvIndex is -1 (#1252)
+- Fix spelling mistake in configfile.md (#1261)
+- Correct typo: Inconsistent filename in registry documentation. (#1275)
+- fix: k3d version ls (now via crane) (#1286)
+- fix: registries.yaml file not marshalled correctly by k8s yaml package
+
+### Deprecated
+
+- change: deprecate 'k3d version ls --format' in favor of '--output'
+
+## v5.4.9 - 16.03.2023 [BROKEN BUILD]
+
+### Changed
+
+- Updated docker dependency to v23.0.1
+- change: replace deprecated set-output command with environment file in Github Actions (#1226)
+
+### Fixed
+
+- fix: go install was failing due to outdated docker dependency
+- fix: handle colima host for host.k3d.internal lookup (#1228)
+
+## v5.4.8 - 04.03.2023
+
+### Changed
+
+- Go 1.20 and updated dependencies
+- change: Use loadbalancer or any *active* server as K3S_URL (#1190)
+- change: graceful shutdown drains node before k3d container stops (#1119)
+- change: update docs to use quotes around extra args (#1218)
+- changed: update podman service documentation around network dns (#1210)
+- change: no whitespace in goflags in makefile
+- change: fix build with go 1.20 (#1216)
+
+### Fixed
+
+- fix: generate checksum for k3d binaries (#1209)
+- fix: improved error handling when update.k3s.io returns a 5XX or invalid response (#1170)
+- fix: install script on windows (#1168)
+- fix: fix for link in doc (#1219)
+
+## v5.4.7 - 02.02.2023
+
+### Changed
+
+- updated direct and transitive dependencies
+
+### Fixed
+
+- fix: avoid appending existing volumes (#1154)
+- fix: indentation for CoreDNS doc (#1166)
+- fix: logs error shadowing exec error (#1172)
+- docs: Add missing backtick to k3s-arg example command (#1192)
+- Support reading in registries-config via env (#1199)
+
 ## v5.4.6 - 29.08.2022
 
 ### Added

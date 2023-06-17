@@ -36,11 +36,12 @@ import (
 	"inet.af/netaddr"
 	"sigs.k8s.io/yaml"
 
+	"github.com/k3d-io/k3d/v5/cmd/util"
 	cliutil "github.com/k3d-io/k3d/v5/cmd/util"
 	cliconfig "github.com/k3d-io/k3d/v5/cmd/util/config"
 	k3dCluster "github.com/k3d-io/k3d/v5/pkg/client"
 	"github.com/k3d-io/k3d/v5/pkg/config"
-	conf "github.com/k3d-io/k3d/v5/pkg/config/v1alpha4"
+	conf "github.com/k3d-io/k3d/v5/pkg/config/v1alpha5"
 	l "github.com/k3d-io/k3d/v5/pkg/logger"
 	"github.com/k3d-io/k3d/v5/pkg/runtimes"
 	k3d "github.com/k3d-io/k3d/v5/pkg/types"
@@ -70,12 +71,10 @@ var (
 )
 
 func initConfig() error {
-
 	// Viper for pre-processed config options
 	ppViper.SetEnvPrefix("K3D")
 
 	if l.Log().GetLevel() >= logrus.DebugLevel {
-
 		c, _ := yaml.Marshal(ppViper.AllSettings())
 		l.Log().Debugf("Additional CLI Configuration:\n%s", c)
 	}
@@ -85,7 +84,6 @@ func initConfig() error {
 
 // NewCmdClusterCreate returns a new cobra command
 func NewCmdClusterCreate() *cobra.Command {
-
 	// create new command
 	cmd := &cobra.Command{
 		Use:   "create NAME",
@@ -96,7 +94,6 @@ func NewCmdClusterCreate() *cobra.Command {
 			return initConfig()
 		},
 		Run: func(cmd *cobra.Command, args []string) {
-
 			/*************************
 			 * Compute Configuration *
 			 *************************/
@@ -251,6 +248,9 @@ func NewCmdClusterCreate() *cobra.Command {
 	cmd.Flags().StringArrayP("runtime-label", "", nil, "Add label to container runtime (Format: `KEY[=VALUE][@NODEFILTER[;NODEFILTER...]]`\n - Example: `k3d cluster create --agents 2 --runtime-label \"my.label@agent:0,1\" --runtime-label \"other.label=somevalue@server:0\"`")
 	_ = ppViper.BindPFlag("cli.runtime-labels", cmd.Flags().Lookup("runtime-label"))
 
+	cmd.Flags().StringArrayP("runtime-ulimit", "", nil, "Add ulimit to container runtime (Format: `NAME[=SOFT]:[HARD]`\n - Example: `k3d cluster create --agents 2 --runtime-ulimit \"nofile=1024:1024\" --runtime-ulimit \"noproc=1024:1024\"`")
+	_ = ppViper.BindPFlag("cli.runtime-ulimits", cmd.Flags().Lookup("runtime-ulimit"))
+
 	cmd.Flags().String("registry-create", "", "Create a k3d-managed registry and connect it to the cluster (Format: `NAME[:HOST][:HOSTPORT]`\n - Example: `k3d cluster create --registry-create mycluster-registry:0.0.0.0:5432`")
 	_ = ppViper.BindPFlag("cli.registries.create", cmd.Flags().Lookup("registry-create"))
 
@@ -258,7 +258,7 @@ func NewCmdClusterCreate() *cobra.Command {
 	_ = ppViper.BindPFlag("hostaliases", cmd.Flags().Lookup("host-alias"))
 
 	/* k3s */
-	cmd.Flags().StringArray("k3s-arg", nil, "Additional args passed to k3s command (Format: `ARG@NODEFILTER[;@NODEFILTER]`)\n - Example: `k3d cluster create --k3s-arg \"--disable=traefik@server:0\"")
+	cmd.Flags().StringArray("k3s-arg", nil, "Additional args passed to k3s command (Format: `ARG@NODEFILTER[;@NODEFILTER]`)\n - Example: `k3d cluster create --k3s-arg \"--disable=traefik@server:0\"`")
 	_ = ppViper.BindPFlag("cli.k3sargs", cmd.Flags().Lookup("k3s-arg"))
 
 	/******************
@@ -346,7 +346,6 @@ func NewCmdClusterCreate() *cobra.Command {
 }
 
 func applyCLIOverrides(cfg conf.SimpleConfig) (conf.SimpleConfig, error) {
-
 	/****************************
 	 * Parse and validate flags *
 	 ****************************/
@@ -403,7 +402,6 @@ func applyCLIOverrides(cfg conf.SimpleConfig) (conf.SimpleConfig, error) {
 	// volumeFilterMap will map volume mounts to applied node filters
 	volumeFilterMap := make(map[string][]string, 1)
 	for _, volumeFlag := range ppViper.GetStringSlice("cli.volumes") {
-
 		// split node filter from the specified volume
 		volume, filters, err := cliutil.SplitFiltersFromFlag(volumeFlag)
 		if err != nil {
@@ -461,7 +459,6 @@ func applyCLIOverrides(cfg conf.SimpleConfig) (conf.SimpleConfig, error) {
 	// k3sNodeLabelFilterMap will add k3s node label to applied node filters
 	k3sNodeLabelFilterMap := make(map[string][]string, 1)
 	for _, labelFlag := range ppViper.GetStringSlice("cli.k3s-node-labels") {
-
 		// split node filter from the specified label
 		label, nodeFilters, err := cliutil.SplitFiltersFromFlag(labelFlag)
 		if err != nil {
@@ -489,7 +486,6 @@ func applyCLIOverrides(cfg conf.SimpleConfig) (conf.SimpleConfig, error) {
 	// runtimeLabelFilterMap will add container runtime label to applied node filters
 	runtimeLabelFilterMap := make(map[string][]string, 1)
 	for _, labelFlag := range ppViper.GetStringSlice("cli.runtime-labels") {
-
 		// split node filter from the specified label
 		label, nodeFilters, err := cliutil.SplitFiltersFromFlag(labelFlag)
 		if err != nil {
@@ -515,11 +511,14 @@ func applyCLIOverrides(cfg conf.SimpleConfig) (conf.SimpleConfig, error) {
 
 	l.Log().Tracef("RuntimeLabelFilterMap: %+v", runtimeLabelFilterMap)
 
+	for _, ulimit := range ppViper.GetStringSlice("cli.runtime-ulimits") {
+		cfg.Options.Runtime.Ulimits = append(cfg.Options.Runtime.Ulimits, *util.ParseRuntimeUlimit[conf.Ulimit](ulimit))
+	}
+
 	// --env
 	// envFilterMap will add container env vars to applied node filters
 	envFilterMap := make(map[string][]string, 1)
 	for _, envFlag := range ppViper.GetStringSlice("cli.env") {
-
 		// split node filter from the specified env var
 		env, filters, err := cliutil.SplitFiltersFromFlag(envFlag)
 		if err != nil {
@@ -546,7 +545,6 @@ func applyCLIOverrides(cfg conf.SimpleConfig) (conf.SimpleConfig, error) {
 	// --k3s-arg
 	argFilterMap := make(map[string][]string, 1)
 	for _, argFlag := range ppViper.GetStringSlice("cli.k3sargs") {
-
 		// split node filter from the specified arg
 		arg, filters, err := cliutil.SplitFiltersFromFlag(argFlag)
 		if err != nil {
@@ -590,7 +588,6 @@ func applyCLIOverrides(cfg conf.SimpleConfig) (conf.SimpleConfig, error) {
 	hostAliasFlags := ppViper.GetStringSlice("hostaliases")
 	if len(hostAliasFlags) > 0 {
 		for _, ha := range hostAliasFlags {
-
 			// split on :
 			s := strings.Split(ha, ":")
 			if len(s) != 2 {

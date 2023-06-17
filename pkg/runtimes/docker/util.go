@@ -113,7 +113,6 @@ func (d Docker) CopyToNode(ctx context.Context, src string, dest string, node *k
 
 // WriteToNode writes a byte array to the selected node
 func (d Docker) WriteToNode(ctx context.Context, content []byte, dest string, mode os.FileMode, node *k3d.Node) error {
-
 	nodeContainer, err := getNodeContainer(ctx, node)
 	if err != nil {
 		return fmt.Errorf("Failed to find container for node '%s': %+v", node.Name, err)
@@ -188,11 +187,11 @@ func GetDockerClient() (client.APIClient, error) {
 	}
 
 	newClientOpts := flags.NewClientOptions()
-	newClientOpts.Common.LogLevel = l.Log().GetLevel().String() // this is needed, as the following Initialize() call will set a new log level on the global logrus instance
+	newClientOpts.LogLevel = l.Log().GetLevel().String() // this is needed, as the following Initialize() call will set a new log level on the global logrus instance
 
 	flagset := pflag.NewFlagSet("docker", pflag.ContinueOnError)
-	newClientOpts.Common.InstallFlags(flagset)
-	newClientOpts.Common.SetDefaultOptions(flagset)
+	newClientOpts.InstallFlags(flagset)
+	newClientOpts.SetDefaultOptions(flagset)
 
 	err = dockerCli.Initialize(newClientOpts)
 	if err != nil {

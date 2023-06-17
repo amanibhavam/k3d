@@ -194,6 +194,35 @@
       "contributions": [
         "code"
       ]
+    },
+    {
+      "login": "kameshsampath",
+      "name": "Kamesh Sampath",
+      "avatar_url": "https://avatars.githubusercontent.com/u/947745?v=4",
+      "profile": "https://blogs.kameshs.dev",
+      "contributions": [
+        "code"
+      ]
+    },
+    {
+      "login": "arikmaor",
+      "name": "Arik Maor",
+      "avatar_url": "https://avatars.githubusercontent.com/u/1926243?v=4",
+      "profile": "https://github.com/arikmaor",
+      "contributions": [
+        "code",
+        "tutorial",
+        "example"
+      ]
+    },
+    {
+      "login": "dgershman",
+      "name": "Danny Gershman",
+      "avatar_url": "https://avatars.githubusercontent.com/u/1850811?v=4",
+      "profile": "https://radiusmethod.com",
+      "contributions": [
+        "code"
+      ]
     }
   ],
   "contributorsPerLine": 7,
@@ -201,5 +230,6 @@
   "projectOwner": "k3d-io",
   "repoType": "github",
   "repoHost": "https://github.com",
-  "skipCi": true
+  "skipCi": true,
+  "commitConvention": "angular"
 }

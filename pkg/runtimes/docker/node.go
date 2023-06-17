@@ -32,6 +32,7 @@ import (
 	"time"
 
 	"github.com/docker/docker/api/types"
+	"github.com/docker/docker/api/types/container"
 	"github.com/docker/docker/api/types/filters"
 	l "github.com/k3d-io/k3d/v5/pkg/logger"
 	runtimeErr "github.com/k3d-io/k3d/v5/pkg/runtimes/errors"
@@ -42,7 +43,6 @@ import (
 
 // CreateNode creates a new container
 func (d Docker) CreateNode(ctx context.Context, node *k3d.Node) error {
-
 	// translate node spec to docker container specs
 	dockerNode, err := TranslateNodeToContainer(node)
 	if err != nil {
@@ -66,7 +66,6 @@ func (d Docker) DeleteNode(ctx context.Context, nodeSpec *k3d.Node) error {
 
 // GetNodesByLabel returns a list of existing nodes
 func (d Docker) GetNodesByLabel(ctx context.Context, labels map[string]string) ([]*k3d.Node, error) {
-
 	// (0) get containers
 	containers, err := getContainersByLabel(ctx, labels)
 	if err != nil {
@@ -96,7 +95,6 @@ func (d Docker) GetNodesByLabel(ctx context.Context, labels map[string]string) (
 	}
 
 	return nodes, nil
-
 }
 
 // StartNode starts an existing node
@@ -159,7 +157,7 @@ func (d Docker) StopNode(ctx context.Context, node *k3d.Node) error {
 	}
 
 	// actually stop the container
-	if err := docker.ContainerStop(ctx, nodeContainer.ID, nil); err != nil {
+	if err := docker.ContainerStop(ctx, nodeContainer.ID, container.StopOptions{}); err != nil {
 		return fmt.Errorf("docker failed to stop the container '%s': %w", nodeContainer.ID, err)
 	}
 
@@ -209,7 +207,6 @@ func getContainerDetails(ctx context.Context, containerID string) (types.Contain
 	}
 
 	return containerDetails, nil
-
 }
 
 // GetNode tries to get a node container by its name
@@ -230,12 +227,10 @@ func (d Docker) GetNode(ctx context.Context, node *k3d.Node) (*k3d.Node, error) 
 	}
 
 	return node, nil
-
 }
 
 // GetNodeStatus returns the status of a node (Running, Started, etc.)
 func (d Docker) GetNodeStatus(ctx context.Context, node *k3d.Node) (bool, string, error) {
-
 	stateString := ""
 	running := false
 
@@ -352,9 +347,9 @@ func execInNode(ctx context.Context, node *k3d.Node, cmd []string, stdin io.Read
 	}
 	if err != nil {
 		if execConnection != nil && execConnection.Reader != nil {
-			logs, err := io.ReadAll(execConnection.Reader)
-			if err != nil {
-				return fmt.Errorf("failed to get logs from errored exec process in node '%s': %w", node.Name, err)
+			logs, logsErr := io.ReadAll(execConnection.Reader)
+			if logsErr != nil {
+				return fmt.Errorf("failed to get logs from errored exec process in node '%s': %w", node.Name, logsErr)
 			}
 			err = fmt.Errorf("%w: Logs from failed access process:\n%s", err, string(logs))
 		}
@@ -367,7 +362,6 @@ func (d Docker) ExecInNodeWithStdin(ctx context.Context, node *k3d.Node, cmd []s
 }
 
 func executeInNode(ctx context.Context, node *k3d.Node, cmd []string, stdin io.ReadCloser) (*types.HijackedResponse, error) {
-
 	l.Log().Debugf("Executing command '%+v' in node '%s'", cmd, node.Name)
 
 	// get the container for the given node

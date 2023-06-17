@@ -30,6 +30,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"regexp"
 	"strconv"
 	"strings"
 	"time"
@@ -184,22 +185,43 @@ func NodeAddToCluster(ctx context.Context, runtime runtimes.Runtime, node *k3d.N
 	l.Log().Tracef("Resulting node %+v", node)
 
 	k3sURLEnvFound := false
+	k3sURLEnvIndex := -1
 	k3sTokenEnvFoundIndex := -1
 	for index, envVar := range node.Env {
 		if strings.HasPrefix(envVar, k3s.EnvClusterConnectURL) {
 			k3sURLEnvFound = true
+			k3sURLEnvIndex = index
 		}
 		if strings.HasPrefix(envVar, k3s.EnvClusterToken) {
 			k3sTokenEnvFoundIndex = index
 		}
 	}
-	if !k3sURLEnvFound {
-		if url, ok := node.RuntimeLabels[k3d.LabelClusterURL]; ok {
-			node.Env = append(node.Env, fmt.Sprintf("%s=%s", k3s.EnvClusterConnectURL, url))
+
+	if !k3sURLEnvFound || !checkK3SURLIsActive(cluster.Nodes, node.Env[k3sURLEnvIndex]) {
+		// Use LB if available as registration url for nodes
+		// otherwise fallback to server node
+		var registrationNode *k3d.Node
+		serverLBNodes := util.FilterNodesByRole(cluster.Nodes, k3d.LoadBalancerRole)
+		if len(serverLBNodes) > 0 {
+			registrationNode = serverLBNodes[0]
 		} else {
-			l.Log().Warnln("Failed to find K3S_URL value!")
+			for _, existingNode := range cluster.Nodes {
+				if existingNode.Role == k3d.ServerRole {
+					registrationNode = existingNode
+					break
+				}
+			}
+		}
+
+		if !k3sURLEnvFound {
+			node.Env = append(node.Env, fmt.Sprintf("%s=https://%s:%s", k3s.EnvClusterConnectURL, registrationNode.Name, k3d.DefaultAPIPort))
+		} else {
+			if !checkK3SURLIsActive(cluster.Nodes, node.Env[k3sURLEnvIndex]) {
+				node.Env[k3sURLEnvIndex] = fmt.Sprintf("%s=https://%s:%s", k3s.EnvClusterConnectURL, registrationNode.Name, k3d.DefaultAPIPort)
+			}
 		}
 	}
+
 	if k3sTokenEnvFoundIndex != -1 && createNodeOpts.ClusterToken != "" {
 		l.Log().Debugln("Overriding copied cluster token with value from nodeCreateOpts...")
 		node.Env[k3sTokenEnvFoundIndex] = fmt.Sprintf("%s=%s", k3s.EnvClusterToken, createNodeOpts.ClusterToken)
@@ -399,7 +421,6 @@ func NodeRun(ctx context.Context, runtime runtimes.Runtime, node *k3d.Node, node
 
 // NodeStart starts an existing node
 func NodeStart(ctx context.Context, runtime runtimes.Runtime, node *k3d.Node, nodeStartOpts *k3d.NodeStartOpts) error {
-
 	// return early, if the node is already running
 	if node.State.Running {
 		l.Log().Infof("Node %s is already running", node.Name)
@@ -467,9 +488,7 @@ func NodeStart(ctx context.Context, runtime runtimes.Runtime, node *k3d.Node, no
 }
 
 func enableFixes(ctx context.Context, runtime runtimes.Runtime, node *k3d.Node, nodeStartOpts *k3d.NodeStartOpts) error {
-
 	if node.Role == k3d.ServerRole || node.Role == k3d.AgentRole {
-
 		// FIXME: FixCgroupV2 - to be removed when fixed upstream
 		// auto-enable, if needed
 		EnableCgroupV2FixIfNeeded(runtime)
@@ -541,6 +560,25 @@ func enableFixes(ctx context.Context, runtime runtimes.Runtime, node *k3d.Node, 
 					Dest:        "/bin/k3d-entrypoint-cgroupv2.sh",
 					Mode:        0744,
 					Description: "Write entrypoint script for CGroupV2 fix",
+				},
+			})
+		}
+
+		if fixes.FixEnabled(fixes.EnvFixMounts) {
+			l.Log().Debugf(">>> enabling mounts magic")
+
+			if nodeStartOpts.NodeHooks == nil {
+				nodeStartOpts.NodeHooks = []k3d.NodeHook{}
+			}
+
+			nodeStartOpts.NodeHooks = append(nodeStartOpts.NodeHooks, k3d.NodeHook{
+				Stage: k3d.LifecycleStagePreStart,
+				Action: actions.WriteFileAction{
+					Runtime:     runtime,
+					Content:     fixes.MountsEntrypoint,
+					Dest:        "/bin/k3d-entrypoint-mounts.sh",
+					Mode:        0744,
+					Description: "Write entrypoint script for mounts fix",
 				},
 			})
 		}
@@ -648,7 +686,7 @@ func NodeDelete(ctx context.Context, runtime runtimes.Runtime, node *k3d.Node, o
 		}
 
 		// if it's a server node, then update the loadbalancer configuration
-		if node.Role == k3d.ServerRole {
+		if node.Role == k3d.ServerRole && cluster.ServerLoadBalancer != nil {
 			if err := UpdateLoadbalancerConfig(ctx, runtime, cluster); err != nil {
 				if !errors.Is(err, ErrLBConfigHostNotFound) {
 					return fmt.Errorf("failed to update cluster loadbalancer: %w", err)
@@ -683,8 +721,31 @@ func patchServerSpec(node *k3d.Node, runtime runtimes.Runtime) error {
 	node.RuntimeLabels[k3d.LabelServerAPIPort] = node.ServerOpts.KubeAPI.Binding.HostPort
 
 	node.Args = append(node.Args, "--tls-san", node.RuntimeLabels[k3d.LabelServerAPIHost]) // add TLS SAN for non default host name
+	if node.RuntimeLabels[k3d.LabelServerLoadBalancer] != "" {
+		// add TLS SAN for server loadbalancer
+		node.Args = append(node.Args, "--tls-san", node.RuntimeLabels[k3d.LabelServerLoadBalancer])
+	}
 
 	return nil
+}
+
+// Check if node associated with K3S URL value is still active in the cluster
+func checkK3SURLIsActive(nodes []*k3d.Node, k3sURL string) bool {
+	// extract the node name
+	re := regexp.MustCompile("K3S_URL=https?://([a-zA-Z0-9_.-]+)")
+	match := re.FindStringSubmatch(k3sURL)
+
+	if match == nil {
+		return false
+	}
+
+	for _, node := range nodes {
+		if node.Name == match[1] {
+			return true
+		}
+	}
+
+	return false
 }
 
 // NodeList returns a list of all existing clusters
@@ -711,6 +772,8 @@ func NodeGet(ctx context.Context, runtime runtimes.Runtime, node *k3d.Node) (*k3
 // NodeWaitForLogMessage follows the logs of a node container and returns if it finds a specific line in there (or timeout is reached)
 func NodeWaitForLogMessage(ctx context.Context, runtime runtimes.Runtime, node *k3d.Node, message string, since time.Time) error {
 	l.Log().Tracef("NodeWaitForLogMessage: Node '%s' waiting for log message '%s' since '%+v'", node.Name, message, since)
+
+	message = strings.ToLower(message)
 
 	// specify max number of retries if container is in crashloop (as defined by last seen message being a fatal log)
 	backOffLimit := k3d.DefaultNodeWaitForLogMessageCrashLoopBackOffLimit
@@ -740,7 +803,6 @@ func NodeWaitForLogMessage(ctx context.Context, runtime runtimes.Runtime, node *
 			}
 			time.Sleep(500 * time.Millisecond)
 		}
-
 	}(ctx, runtime, node, since, donechan)
 
 	// pre-building error message in case the node stops returning logs for some reason: to be enriched with scanner error
@@ -751,7 +813,6 @@ func NodeWaitForLogMessage(ctx context.Context, runtime runtimes.Runtime, node *
 	// e.g. when a new server is joining an existing cluster and has to wait for another member to finish learning.
 	// The logstream returned by docker ends everytime the container restarts, so we have to start from the beginning.
 	for i := 0; i < backOffLimit; i++ {
-
 		// get the log stream (reader is following the logstream)
 		out, err := runtime.GetNodeLogs(ctx, node, since, &runtimeTypes.NodeLogsOpts{Follow: true})
 		if out != nil {
@@ -783,14 +844,13 @@ func NodeWaitForLogMessage(ctx context.Context, runtime runtimes.Runtime, node *
 				l.Log().Tracef(">>> Parsing log line: `%s`", scanner.Text())
 			}
 			// check if we can find the specified line in the log
-			if strings.Contains(scanner.Text(), message) {
+			if strings.Contains(strings.ToLower(scanner.Text()), message) {
 				l.Log().Tracef("Found target message `%s` in log line `%s`", message, scanner.Text())
 				l.Log().Debugf("Finished waiting for log message '%s' from node '%s'", message, node.Name)
 				return nil
 			}
 
 			previousline = scanner.Text()
-
 		}
 
 		if e := scanner.Err(); e != nil {
@@ -857,7 +917,6 @@ nodeLoop:
 
 // NodeEdit let's you update an existing node
 func NodeEdit(ctx context.Context, runtime runtimes.Runtime, existingNode, changeset *k3d.Node) error {
-
 	/*
 	 * Make a deep copy of the existing node
 	 */
@@ -878,7 +937,6 @@ func NodeEdit(ctx context.Context, runtime runtimes.Runtime, existingNode, chang
 	for port, portbindings := range changeset.Ports {
 	loopChangesetPortbindings:
 		for _, portbinding := range portbindings {
-
 			// loop over existing portbindings to avoid port collisions (docker doesn't check for it)
 			for _, existingPB := range result.Ports[port] {
 				if util.IsPortBindingEqual(portbinding, existingPB) { // also matches on "equal" HostIPs (127.0.0.1, "", 0.0.0.0)
@@ -931,7 +989,6 @@ func NodeEdit(ctx context.Context, runtime runtimes.Runtime, existingNode, chang
 }
 
 func NodeReplace(ctx context.Context, runtime runtimes.Runtime, old, new *k3d.Node) error {
-
 	// rename existing node
 	oldNameTemp := fmt.Sprintf("%s-%s", old.Name, util.GenerateRandomString(5))
 	oldNameOriginal := old.Name
@@ -987,7 +1044,6 @@ type CopyNodeOpts struct {
 }
 
 func CopyNode(ctx context.Context, src *k3d.Node, opts CopyNodeOpts) (*k3d.Node, error) {
-
 	targetCopy, err := copystruct.Copy(src)
 	if err != nil {
 		return nil, fmt.Errorf("failed to copy node struct: %w", err)

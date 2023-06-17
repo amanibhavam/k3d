@@ -30,7 +30,7 @@ endif
 K3D_IMAGE_TAG := $(GIT_TAG:v%=%)
 
 # get latest k3s version: grep the tag and replace + with - (difference between git and dockerhub tags)
-K3S_TAG		:= $(shell curl --silent --retry 3 "https://update.k3s.io/v1-release/channels/stable" | egrep -o '/v[^ ]+"' | sed -E 's/\/|\"//g' | sed -E 's/\+/\-/')
+K3S_TAG := $(shell curl --silent --retry 3 "https://update.k3s.io/v1-release/channels/stable" | egrep -o '/v[^ ]+"' | sed -E 's/\/|\"//g' | sed -E 's/\+/\-/')
 
 ifeq ($(K3S_TAG),)
 $(warning K3S_TAG undefined: couldn't get latest k3s image tag!)
@@ -72,7 +72,7 @@ TESTS     := ./...
 TESTFLAGS :=
 LDFLAGS   := -w -s -X github.com/k3d-io/k3d/v5/version.Version=${GIT_TAG} -X github.com/k3d-io/k3d/v5/version.K3sVersion=${K3S_TAG}
 GCFLAGS   := 
-GOFLAGS   := -mod readonly
+GOFLAGS   := -mod=readonly
 BINDIR    := $(CURDIR)/bin
 BINARIES  := k3d
 
@@ -89,7 +89,7 @@ GO_SRC += $(foreach dir,$(REC_DIRS),$(shell find $(dir) -name "*.go"))
 ########## Required Tools ##########
 # Go Package required
 PKG_GOX := github.com/iwilltry42/gox@v0.1.0
-PKG_GOLANGCI_LINT_VERSION := 1.49.0
+PKG_GOLANGCI_LINT_VERSION := 1.51.2
 PKG_GOLANGCI_LINT_SCRIPT := https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh
 PKG_GOLANGCI_LINT := github.com/golangci/golangci-lint/cmd/golangci-lint@v${PKG_GOLANGCI_LINT_VERSION}
 
@@ -126,6 +126,9 @@ build:
 build-cross: LDFLAGS += -extldflags "-static"
 build-cross:
 	CGO_ENABLED=0 gox -parallel=3 -output="_dist/$(BINARIES)-{{.OS}}-{{.Arch}}" -osarch='$(TARGETS)' $(GOFLAGS) $(if $(TAGS),-tags '$(TAGS)',) -ldflags '$(LDFLAGS)'
+gen-checksum:	build-cross
+	$(eval ARTIFACTS_TO_PUBLISH := $(shell ls _dist/*))
+	$$(sha256sum $(ARTIFACTS_TO_PUBLISH) > _dist/checksums.txt)
 
 # build a specific docker target ( '%' matches the target as specified in the Dockerfile)
 build-docker-%:
@@ -168,6 +171,9 @@ check-fmt:
 
 lint:
 	@golangci-lint run -D $(GOLANGCI_LINT_DISABLED_LINTERS) $(LINT_DIRS)
+
+ci-lint:
+	golangci-lint run --timeout 5m0s --out-format=github-actions -D $(GOLANGCI_LINT_DISABLED_LINTERS) $(LINT_DIRS)
 
 check: check-fmt lint
 

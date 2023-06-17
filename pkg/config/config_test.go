@@ -27,21 +27,20 @@ import (
 
 	"github.com/go-test/deep"
 	configtypes "github.com/k3d-io/k3d/v5/pkg/config/types"
-	conf "github.com/k3d-io/k3d/v5/pkg/config/v1alpha4"
+	conf "github.com/k3d-io/k3d/v5/pkg/config/v1alpha5"
 	"github.com/spf13/viper"
 
 	k3d "github.com/k3d-io/k3d/v5/pkg/types"
 )
 
 func TestReadSimpleConfig(t *testing.T) {
-
 	exposedAPI := conf.SimpleExposureOpts{}
 	exposedAPI.HostIP = "0.0.0.0"
 	exposedAPI.HostPort = "6443"
 
 	expectedConfig := conf.SimpleConfig{
 		TypeMeta: configtypes.TypeMeta{
-			APIVersion: "k3d.io/v1alpha4",
+			APIVersion: "k3d.io/v1alpha5",
 			Kind:       "Simple",
 		},
 		ObjectMeta: configtypes.ObjectMeta{
@@ -104,6 +103,11 @@ func TestReadSimpleConfig(t *testing.T) {
 						NodeFilters: []string{"server:0", "loadbalancer"},
 					},
 				},
+				Ulimits: []conf.Ulimit{{
+					Name: "nofile",
+					Soft: 1024,
+					Hard: 1024,
+				}},
 			},
 		},
 	}
@@ -132,14 +136,12 @@ func TestReadSimpleConfig(t *testing.T) {
 	if diff := deep.Equal(cfg, expectedConfig); diff != nil {
 		t.Errorf("Actual representation\n%+v\ndoes not match expected representation\n%+v\nDiff:\n%+v", cfg, expectedConfig, diff)
 	}
-
 }
 
 func TestReadClusterConfig(t *testing.T) {
-
 	expectedConfig := conf.ClusterConfig{
 		TypeMeta: configtypes.TypeMeta{
-			APIVersion: "k3d.io/v1alpha4",
+			APIVersion: "k3d.io/v1alpha5",
 			Kind:       "Cluster",
 		},
 		Cluster: k3d.Cluster{
@@ -177,14 +179,12 @@ func TestReadClusterConfig(t *testing.T) {
 	if diff := deep.Equal(readConfig, expectedConfig); diff != nil {
 		t.Errorf("Actual representation\n%+v\ndoes not match expected representation\n%+v\nDiff:\n%+v", readConfig, expectedConfig, diff)
 	}
-
 }
 
 func TestReadClusterListConfig(t *testing.T) {
-
 	expectedConfig := conf.ClusterListConfig{
 		TypeMeta: configtypes.TypeMeta{
-			APIVersion: "k3d.io/v1alpha4",
+			APIVersion: "k3d.io/v1alpha5",
 			Kind:       "ClusterList",
 		},
 		Clusters: []k3d.Cluster{
@@ -233,11 +233,9 @@ func TestReadClusterListConfig(t *testing.T) {
 	if diff := deep.Equal(readConfig, expectedConfig); diff != nil {
 		t.Errorf("Actual representation\n%+v\ndoes not match expected representation\n%+v\nDiff:\n%+v", readConfig, expectedConfig, diff)
 	}
-
 }
 
 func TestReadUnknownConfig(t *testing.T) {
-
 	cfgFile := "./test_assets/config_test_unknown.yaml"
 
 	config := viper.New()
@@ -256,18 +254,16 @@ func TestReadUnknownConfig(t *testing.T) {
 	if err == nil {
 		t.Fail()
 	}
-
 }
 
 func TestReadSimpleConfigRegistries(t *testing.T) {
-
 	exposedAPI := conf.SimpleExposureOpts{}
 	exposedAPI.HostIP = "0.0.0.0"
 	exposedAPI.HostPort = "6443"
 
 	expectedConfig := conf.SimpleConfig{
 		TypeMeta: configtypes.TypeMeta{
-			APIVersion: "k3d.io/v1alpha4",
+			APIVersion: "k3d.io/v1alpha5",
 			Kind:       "Simple",
 		},
 		ObjectMeta: configtypes.ObjectMeta{
