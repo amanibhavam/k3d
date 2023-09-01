@@ -230,7 +230,9 @@ ci-setup:
 	@echo "### Installing Go tools..."
 	@echo "### -> Installing golangci-lint..."
 	curl -sfL $(PKG_GOLANGCI_LINT_SCRIPT) | sh -s -- -b $(GOENVPATH)/bin v$(PKG_GOLANGCI_LINT_VERSION)
-	asdf reshim
 
 	@echo "### -> Installing gox..."
-	sudo ./scripts/install-tools.sh gox
+	./scripts/install-tools.sh gox
+
+	@echo "### Installing kubectl..."
+	./scripts/install-tools.sh kubectl

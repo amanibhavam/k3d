@@ -22,7 +22,6 @@ THE SOFTWARE.
 package node
 
 import (
-	"fmt"
 	"strings"
 	"time"
 
@@ -197,16 +196,8 @@ func parseCreateNodeCmd(cmd *cobra.Command, args []string) ([]*k3d.Node, string)
 	// generate list of nodes
 	nodes := []*k3d.Node{}
 	for i := 0; i < replicas; i++ {
-		var nodeName string
-
-		if i == 0 {
-			nodeName = args[0]
-		} else {
-			nodeName = fmt.Sprintf("%s-%d", args[0], i)
-		}
-
 		node := &k3d.Node{
-			Name:           nodeName,
+			Name:           args[0],
 			Role:           role,
 			Image:          image,
 			K3sNodeLabels:  k3sNodeLabels,
