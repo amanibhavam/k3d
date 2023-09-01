@@ -8,7 +8,7 @@
 [![Go Report Card](https://goreportcard.com/badge/github.com/k3d-io/k3d?style=flat-square)](https://goreportcard.com/report/github.com/k3d-io/k3d)
 
 <!-- ALL-CONTRIBUTORS-BADGE:START - Do not remove or modify this section -->
-[![All Contributors](https://img.shields.io/badge/all_contributors-23-orange.svg?style=flat-square)](#contributors-)
+[![All Contributors](https://img.shields.io/badge/all_contributors-24-orange.svg?style=flat-square)](#contributors-)
 <!-- ALL-CONTRIBUTORS-BADGE:END -->
 [![Contributor Covenant](https://img.shields.io/badge/Contributor%20Covenant-v2.0%20adopted-ff69b4.svg)](code_of_conduct.md)
 
@@ -67,7 +67,7 @@ You have several options there:
 - install via [MacPorts](https://www.macports.org): `sudo port selfupdate && sudo port install k3d` (MacPorts is available for MacOS)
 - install via [AUR](https://aur.archlinux.org/) package [rancher-k3d-bin](https://aur.archlinux.org/packages/rancher-k3d-bin/): `yay -S rancher-k3d-bin`
 - grab a release from the [release tab](https://github.com/k3d-io/k3d/releases) and install it yourself.
-- install via go: `go install github.com/k3d-io/k3d@latest` (**Note**: this will give you unreleased/bleeding-edge changes)
+- install via go: `go install github.com/k3d-io/k3d/v5@latest` (**Note**: this will give you unreleased/bleeding-edge changes)
 - use [Chocolatey](https://chocolatey.org/): `choco install k3d` (Chocolatey package manager is available for Windows)
   - package source can be found in [erwinkersten/chocolatey-packages](https://github.com/erwinkersten/chocolatey-packages/tree/master/automatic/k3d)
 
@@ -118,7 +118,7 @@ k3d is a community-driven project and so we welcome contributions of any form, b
 
 Please read our [**Contributing Guidelines**](./CONTRIBUTING.md) and the related [**Code of Conduct**](./CODE_OF_CONDUCT.md).
 
-You can find an overview of the k3d project (e.g. explanations and a repository guide) in the documentation: [k3d.io/internals/project](https://k3d.io/internals/project)
+You can find an overview of the k3d project (e.g. explanations and a repository guide) in the documentation: [k3d.io/stable/design/project/](https://k3d.io/stable/design/project/)
 
 [![Contributor Covenant](https://img.shields.io/badge/Contributor%20Covenant-v2.0%20adopted-ff69b4.svg)](code_of_conduct.md)
 
@@ -161,6 +161,7 @@ Thanks goes to these wonderful people ([emoji key](https://allcontributors.org/d
     <tr>
       <td align="center" valign="top" width="14.28%"><a href="https://github.com/arikmaor"><img src="https://avatars.githubusercontent.com/u/1926243?v=4?s=100" width="100px;" alt="Arik Maor"/><br /><sub><b>Arik Maor</b></sub></a><br /><a href="https://github.com/k3d-io/k3d/commits?author=arikmaor" title="Code">💻</a> <a href="#tutorial-arikmaor" title="Tutorials">✅</a> <a href="#example-arikmaor" title="Examples">💡</a></td>
       <td align="center" valign="top" width="14.28%"><a href="https://radiusmethod.com"><img src="https://avatars.githubusercontent.com/u/1850811?v=4?s=100" width="100px;" alt="Danny Gershman"/><br /><sub><b>Danny Gershman</b></sub></a><br /><a href="https://github.com/k3d-io/k3d/commits?author=dgershman" title="Code">💻</a></td>
+      <td align="center" valign="top" width="14.28%"><a href="https://github.com/stopanko"><img src="https://avatars.githubusercontent.com/u/3759349?v=4?s=100" width="100px;" alt="stopanko"/><br /><sub><b>stopanko</b></sub></a><br /><a href="#financial-stopanko" title="Financial">💵</a></td>
     </tr>
   </tbody>
 </table>

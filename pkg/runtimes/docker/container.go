@@ -26,7 +26,6 @@ import (
 	"context"
 	"fmt"
 	"io"
-	"os"
 
 	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/api/types/container"
@@ -49,7 +48,7 @@ func createContainer(ctx context.Context, dockerNode *NodeInDocker, name string)
 	defer docker.Close()
 
 	// create container
-	var resp container.ContainerCreateCreatedBody
+	var resp container.CreateResponse
 	for {
 		resp, err = docker.ContainerCreate(ctx, &dockerNode.ContainerConfig, &dockerNode.HostConfig, &dockerNode.NetworkingConfig, nil, name)
 		if err != nil {
@@ -117,7 +116,7 @@ func pullImage(ctx context.Context, docker client.APIClient, image string) error
 	// in debug mode (--verbose flag set), output pull progress
 	var writer io.Writer = io.Discard
 	if l.Log().GetLevel() == logrus.DebugLevel {
-		writer = os.Stdout
+		writer = l.Log().Out
 	}
 	_, err = io.Copy(writer, resp)
 	if err != nil {
@@ -176,7 +175,7 @@ func executeCheckInContainer(ctx context.Context, image string, cmd []string) (i
 	defer docker.Close()
 
 	// create container
-	var resp container.ContainerCreateCreatedBody
+	var resp container.CreateResponse
 	for {
 		resp, err = docker.ContainerCreate(ctx, &container.Config{
 			Image:      image,

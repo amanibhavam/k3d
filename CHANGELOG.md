@@ -1,5 +1,39 @@
 # Changelog
 
+## v5.6.0 - 21.08.2023
+
+### Added
+
+- add: iptables in DinD image (#1298)
+- docs(podman): add usage for rootless mode on macOS (#1314)
+
+### Changed
+
+- **Potentially Breaking**: For people using k3d as a module: switch from netaddr.af to netipx + netip (changed some code around `host.k3d.internal` and the docker runtime)
+- **Potentially Breaking**: K3d config directory may change for you: Adhere to XDG's configuration specification (#1320)
+
+### Fixed
+
+- docs: fix go install command (#1337)
+- fix docs links in CONTRIBUTING.md
+- chore: pkg imported more than once (#1313)
+
+## v5.5.2 - 03.08.2023
+
+### Fixed
+
+- docs: fix list failing to render (#1300)
+- bump dependencies to fix `Invalid Host Header` issue with [Docker/Moby#45935](https://github.com/moby/moby/issues/45935)
+
+### Changed
+
+- change: proxy - update nginx-alpine base image (#1309)
+- change: add empty /tmp to binary-only image to make it work with config files
+
+### Added
+
+- add: workflow to label issues/prs by sponsors
+
 ## v5.5.1 - 19.05.2023
 
 ### Fixed

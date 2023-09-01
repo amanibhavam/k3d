@@ -23,6 +23,7 @@ package cluster
 
 import (
 	"fmt"
+	"net/netip"
 	"os"
 	"runtime"
 	"strconv"
@@ -33,10 +34,8 @@ import (
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
-	"inet.af/netaddr"
 	"sigs.k8s.io/yaml"
 
-	"github.com/k3d-io/k3d/v5/cmd/util"
 	cliutil "github.com/k3d-io/k3d/v5/cmd/util"
 	cliconfig "github.com/k3d-io/k3d/v5/cmd/util/config"
 	k3dCluster "github.com/k3d-io/k3d/v5/pkg/client"
@@ -512,7 +511,7 @@ func applyCLIOverrides(cfg conf.SimpleConfig) (conf.SimpleConfig, error) {
 	l.Log().Tracef("RuntimeLabelFilterMap: %+v", runtimeLabelFilterMap)
 
 	for _, ulimit := range ppViper.GetStringSlice("cli.runtime-ulimits") {
-		cfg.Options.Runtime.Ulimits = append(cfg.Options.Runtime.Ulimits, *util.ParseRuntimeUlimit[conf.Ulimit](ulimit))
+		cfg.Options.Runtime.Ulimits = append(cfg.Options.Runtime.Ulimits, *cliutil.ParseRuntimeUlimit[conf.Ulimit](ulimit))
 	}
 
 	// --env
@@ -595,7 +594,7 @@ func applyCLIOverrides(cfg conf.SimpleConfig) (conf.SimpleConfig, error) {
 			}
 
 			// validate IP
-			ip, err := netaddr.ParseIP(s[0])
+			ip, err := netip.ParseAddr(s[0])
 			if err != nil {
 				return cfg, fmt.Errorf("invalid IP '%s' in host-alias '%s': %w", s[0], ha, err)
 			}
